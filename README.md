@@ -1,1 +1,1 @@
-# gutil
+Utility python functions

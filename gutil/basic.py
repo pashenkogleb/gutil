@@ -8,6 +8,7 @@ def reload():
     can be used as from the main script gutil = gutil.reload()
     '''
     importlib.reload(gutil.basic)
+    importlib.reload(gutil.pandas)
     importlib.reload(gutil)
     return gutil
 

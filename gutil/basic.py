@@ -9,6 +9,7 @@ def reload():
     '''
     importlib.reload(gutil.basic)
     importlib.reload(gutil.pandas)
+    importlib.reload(gutil.ml)
     importlib.reload(gutil)
     return gutil
 

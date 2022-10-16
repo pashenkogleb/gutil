@@ -9,3 +9,4 @@ def apply(s, func):
     for x in tqdm.tqdm(s):
         res.append(func(x))
     return pd.Series(res,index= s.index)
+

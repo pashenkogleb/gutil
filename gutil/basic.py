@@ -1,5 +1,8 @@
 import importlib
 import gutil
+import subprocess
+import os
+
 
 
 def reload():
@@ -9,7 +12,8 @@ def reload():
     '''
     importlib.reload(gutil.basic)
     importlib.reload(gutil.pandas)
-    importlib.reload(gutil.ml)
+    if hasattr(gutil, "ml"):
+        importlib.reload(gutil.ml)
     importlib.reload(gutil)
     return gutil
 
@@ -17,3 +21,11 @@ def reload():
 def mydir(x):
     res = dir(x)
     return [x for x in res if not x.startswith("_")]
+
+def shell(x):
+    p = subprocess.Popen(x, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    stdout, stderr = p.communicate()
+    return_code = p.poll()
+    assert len(stderr) == 0, stderr
+    assert return_code ==0, return_code
+    return stdout.decode()

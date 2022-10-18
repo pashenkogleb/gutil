@@ -2,8 +2,11 @@ import importlib
 import gutil
 import subprocess
 import os
+import IPython
 
 
+def widen():
+    IPython.display.display(IPython.display.HTML("<style>.container { width:100% !important; }</style>"))
 
 def reload():
     '''

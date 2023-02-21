@@ -1,2 +1,4 @@
 from gutil.basic import *
-import gutil.pandas as pandas
+from gutil import pandas
+from gutil import features
+from gutil import symbolic

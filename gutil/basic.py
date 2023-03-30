@@ -15,6 +15,7 @@ def reload():
     '''
     importlib.reload(gutil.basic)
     importlib.reload(gutil.pandas)
+    importlib.reload(gutil.op)
     if hasattr(gutil, "ml"):
         importlib.reload(gutil.ml)
     importlib.reload(gutil)

@@ -29,7 +29,10 @@ def cv_optimize(clf_type, params,  X, Y, num_splits = 5, return_search_space = F
 
     results = pd.DataFrame(results)
 
-    best_model = clf_type(**results.sort_values("score").iloc[0].drop("score").to_dict())
+
+    opt_params = results.sort_values("score").iloc[0].drop("score").to_dict()
+    print("optimal params:", opt_params)
+    best_model = clf_type(**opt_params)
     if return_search_space:
         return best_model, results
     else:

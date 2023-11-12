@@ -10,7 +10,7 @@ def wait(driver,tag, attrib, wait_time = 10):
     '''
     cur_time = datetime.now()
     while (datetime.now()-cur_time).total_seconds() < wait_time:
-        bs = BeautifulSoup(driver.page_source)
+        bs = BeautifulSoup(driver.page_source, features="lxml")
         el = bs.find(tag, attrib)
         if el is not None:
             return el

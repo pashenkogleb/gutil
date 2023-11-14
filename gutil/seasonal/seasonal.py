@@ -184,9 +184,9 @@ class MyExponential:
         self.opt_flattened_ = opt['x']
         self.initial_level_ = opt['x'][0]
         self.initial_slope_ = opt['x'][1]
-        self.initial_alpha_ = opt['x'][2]
-        self.initial_beta_ = opt['x'][3]
-        self.initial_gammas_ = opt['x'][4:4+len(self.sps)]
+        self.opt_alpha_ = opt['x'][2]
+        self.opt_beta_ = opt['x'][3]
+        self.opt_gammas_ = opt['x'][4:4+len(self.sps)]
         self.initial_seasonalities_= list(self.prepare_args(opt['x'], y)[-2])
         loss,predicted, levels, trends,deseasoned = self.__loss(*self.prepare_args(opt['x'], y))
         self.loss_=loss

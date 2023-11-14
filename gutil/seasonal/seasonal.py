@@ -40,7 +40,6 @@ class MyExponential:
         fits exponential model that has level, trend and seasonal components
         all initial parameters + smoothers are fitted 
         can handle nans effortlessly
-
         '''
         assert isinstance(sps, list)
         self.sps = sps

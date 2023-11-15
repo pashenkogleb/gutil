@@ -6,6 +6,7 @@ import numba
 import numpy as np
 import scipy
 import time
+import copy
 
 def plot_seasonal(series, apply_differencer = False, resample = None):
     '''
@@ -53,6 +54,7 @@ class MyExponential:
         '''
         initial_seasonals is  a list of numpy arrays
         initial_seasonals are modified in place !
+        to use this function for prediction simply pass nans 
         '''
         #list_type = numba.types.ListType(numba.types.Array(numba.types.int64, 1, 'C'))
         assert len(gammas) == len(initial_seasonals)
@@ -74,11 +76,11 @@ class MyExponential:
                 cs = cur_seasonals[j]
                 seasonal_adj += cs[i%len(cs)]
             pred = cur_level + cur_trend + seasonal_adj
-            
             error =y[i] - pred
+            cur_level += cur_trend
             if np.isfinite(y[i]):
                 loss+=error**2
-                cur_level += cur_trend + alpha*error
+                cur_level+= alpha*error
                 cur_trend += beta * error
                 for j in range(n_seasons):
                     cs = cur_seasonals[j]
@@ -188,10 +190,23 @@ class MyExponential:
         self.opt_beta_ = opt['x'][3]
         self.opt_gammas_ = opt['x'][4:4+len(self.sps)]
         self.initial_seasonalities_= list(self.prepare_args(opt['x'], y)[-2])
-        loss,predicted, levels, trends,deseasoned = self.__loss(*self.prepare_args(opt['x'], y))
+        args= self.prepare_args(opt['x'], y)
+        loss,predicted, levels, trends,deseasoned = self.__loss(*args)
+        self.final_seasonalities_ = list(args[-2]) # they are modified in place after call
+
         self.loss_=loss
         self.df_ = pd.DataFrame({"act":y, "predicted":predicted, "resid": y-predicted, "levels":levels, "trends":trends,"deseasoned":deseasoned})
         return self
+    def predict(self,horizon=1):
+        assert isinstance(horizon, int)
+        s = copy.deepcopy(self.final_seasonalities_)
+        s = numba.typed.List(s)
+        l  = self.df_['levels'].iloc[-1]
+        t  = self.df_['trends'].iloc[-1]
+
+        fake_y = np.empty(horizon, dtype=np.float64) * np.nan
+        rmse,predicted, levels, trends,deseasoned = self.__loss(l, t, self.opt_alpha_, self.opt_beta_,self.opt_gammas_,s, fake_y)
+        return predicted
 
 
     

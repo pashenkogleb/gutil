@@ -121,6 +121,7 @@ class MyExponential:
         '''
         options are passed to scipy.optimize
         '''
+        y = np.array(y)
         
         initial_level=y[0]
         initial_trend = y[1]-y[0]

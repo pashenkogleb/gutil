@@ -12,6 +12,8 @@ def plot_seasonal(series, apply_differencer = False, resample = None):
     '''
     takes a series as an input
     can provide resample = "1w" to aggregate by week if data is not available for every day
+    
+
     '''
     if apply_differencer:
         series = Differencer(na_handling="keep_na").fit_transform(series)
@@ -41,6 +43,7 @@ class MyExponential:
         fits exponential model that has level, trend and seasonal components
         all initial parameters + smoothers are fitted 
         can handle nans effortlessly
+        large seasonality like 365 adds 365 new variables to optimization and makes it much slower
         '''
         assert isinstance(sps, list)
         self.sps = sps
@@ -109,7 +112,10 @@ class MyExponential:
             sarr = x[cur_index:cur_index+s]
             seasonals.append(np.array(sarr,dtype =np.float64))
             cur_index+=s
-        slist = numba.typed.List(seasonals)
+
+        slist = numba.typed.List(lsttype=numba.types.ListType(numba.types.Array(numba.types.float64, 1, 'C')))
+        for s in seasonals:
+            slist.append(s)
         args.append(slist)
         args.append(y)
         return args
@@ -117,7 +123,7 @@ class MyExponential:
  
 
 
-    def fit(self, y, method = "L-BFGS-B",options = {"maxiter": 100000}, debug=False):
+    def fit(self, y, method = "L-BFGS-B",options = {"maxiter": 100000, "maxfun":100000}, debug=False):
         '''
         options are passed to scipy.optimize
         '''
@@ -200,8 +206,10 @@ class MyExponential:
         return self
     def predict(self,horizon=1):
         assert isinstance(horizon, int)
-        s = copy.deepcopy(self.final_seasonalities_)
-        s = numba.typed.List(s)
+        s_copy = copy.deepcopy(self.final_seasonalities_)
+        s = numba.typed.List(lsttype=numba.types.ListType(numba.types.Array(numba.types.float64, 1, 'C')))
+        for s_val in s_copy:
+            s.append(s_val)
         l  = self.df_['levels'].iloc[-1]
         t  = self.df_['trends'].iloc[-1]
 

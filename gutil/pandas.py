@@ -15,4 +15,9 @@ def lookup(df,rows,columns):
     assert isinstance(df,pd.DataFrame)
     col_index = df.columns.get_indexer(columns)
     row_index = df.index.get_indexer(rows)
-    return df.values[row_index,col_index]
+    out =  df.values[row_index,col_index]
+    mask = (row_index==-1) | (col_index==-1)
+    if np.sum(mask)>0: # has incorrect indices
+        out = out.astype(np.float64)
+        out[mask] =np.nan
+    return out

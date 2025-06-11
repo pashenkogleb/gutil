@@ -1,5 +1,6 @@
 import pandas as pd
 import tqdm
+import numpy as np
 
 def apply(s, func):
     '''

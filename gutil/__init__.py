@@ -6,3 +6,4 @@ from gutil import unix
 from gutil import telegram
 from gutil import webparsing
 from gutil import seasonal
+from gutil import op

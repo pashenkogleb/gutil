@@ -4,6 +4,70 @@ import itertools
 from sklearn.model_selection import KFold
 import sklearn.model_selection
 import pandas as pd
+import numpy as np
+import lightgbm 
+from lightgbm import LGBMClassifier
+import sklearn
+
+
+class LgbClf(LGBMClassifier):
+    '''
+    suports early stopping internally
+    cv should support split method. Only uses first split.
+    uses KFold(n_splits=5, shuffle=True) by default
+    '''
+    def __init__(self,cv=None,stopping_rounds=5, **kwargs):
+        if cv is None:
+            cv=KFold(n_splits=5, shuffle=True, random_state=1)
+            
+        assert int(lightgbm.__version__.split(".")[0])>=4, "otherwise lgb uses different syntax"
+        super().__init__(**kwargs)
+        self.cv =cv
+        self.stopping_rounds=stopping_rounds
+
+
+    def get_params(self, deep=True):
+        params = super().get_params(deep=deep)
+        # Remove or replace cv here to avoid serialization errors
+        params.pop('cv', None)
+        params.pop('stopping_rounds', None)
+        return params
+
+    def set_params(self, **params):
+        if 'cv' in params:
+            self.cv = params.pop('cv')
+        if "stopping_rounds" in params:
+            self.stopping_rounds= params.pop("stopping_rounds")
+        super().set_params(**params)
+        return self
+    
+    def fit(self, X,y, **kwargs):
+        tr_ind, val_ind = next(self.cv.split(X, y))
+        callbacks = kwargs.pop("callbacks", [])
+        callbacks.append(lightgbm.early_stopping(self.stopping_rounds))
+
+        Xtr = self.__index(X, tr_ind)
+        ytr = self.__index(y, tr_ind)
+        Xval = self.__index(X, val_ind)
+        yval = self.__index(y, val_ind)
+        # return (Xtr,ytr,Xval, yval)
+        
+        super().fit(Xtr, ytr,
+            eval_set=[(Xval,yval )],
+            callbacks=callbacks,
+            eval_metric='logloss',
+            **kwargs
+        )
+        return self
+
+    @staticmethod
+    def __index(X, ind):
+        if isinstance(X,np.ndarray):
+            return X[ind]
+        elif isinstance(X, pd.DataFrame) or isinstance(X,pd.Series):
+            return X.iloc[ind]
+        else:
+            raise ValueError(f"unknown type: {type(X)}")
 
 
 def cv_optimize(clf_type, params,  X, Y, num_splits = 5, return_search_space = False):

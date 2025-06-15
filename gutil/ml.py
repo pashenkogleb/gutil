@@ -7,29 +7,102 @@ import pandas as pd
 import numpy as np
 import lightgbm 
 from lightgbm import LGBMClassifier
+from lightgbm import LGBMRegressor
 import sklearn
 
+def __make_lgb(X):
+    class LgbBase(X):
+        '''
+        suports early stopping internally
+        cv should support split method. Only uses first split.
+        uses KFold(n_splits=5, shuffle=True) by default
+        '''
+        def __init__(self,cv=None,stopping_rounds=5,max_est= 1000, **kwargs):
+            if cv is None:
+                cv=KFold(n_splits=5, shuffle=True, random_state=1)
+                
+            assert int(lightgbm.__version__.split(".")[0])>=4, "otherwise lgb uses different syntax"
+            if "n_estimators" in kwargs: # for some reason necessary in cross validation
+                kwargs.pop("n_estimators")
+            super().__init__(n_estimators=max_est, **kwargs)
+            self.cv =cv
+            self.stopping_rounds=stopping_rounds
+            self.max_est = max_est
+    
+        def get_params(self, deep=True):
+            params = super().get_params(deep=deep)
+            # Remove or replace cv here to avoid serialization errors
+            params.pop('cv', None)
+            params.pop('max_est', None)
+            params.pop('stopping_rounds', None)
+            return params
+    
+        def set_params(self, **params):
+            if 'cv' in params:
+                self.cv = params.pop('cv')
+            if "stopping_rounds" in params:
+                self.stopping_rounds= params.pop("stopping_rounds")
+            if "max_est" in params:
+                self.max_est = params.pop("max_est")
+            super().set_params(**params)
+            return self
+        
+        def fit(self, X,y, **kwargs):
+            tr_ind, val_ind = next(self.cv.split(X, y))
+            callbacks = kwargs.pop("callbacks", [])
+            callbacks.append(lightgbm.early_stopping(self.stopping_rounds))
+    
+            Xtr = self.__index(X, tr_ind)
+            ytr = self.__index(y, tr_ind)
+            Xval = self.__index(X, val_ind)
+            yval = self.__index(y, val_ind)
+            # return (Xtr,ytr,Xval, yval)
+            
+            super().fit(Xtr, ytr,
+                eval_set=[(Xval,yval )],
+                callbacks=callbacks,
+                #eval_metric='logloss',
+                **kwargs
+            )
+            return self
+    
+        @staticmethod
+        def __index(X, ind):
+            if isinstance(X,np.ndarray):
+                return X[ind]
+            elif isinstance(X, pd.DataFrame) or isinstance(X,pd.Series):
+                return X.iloc[ind]
+            else:
+                raise ValueError(f"unknown type: {type(X)}")
+    return LgbBase
 
-class LgbClf(LGBMClassifier):
+LgbClf = __make_lgb(LGBMClassifier)
+LgbReg = __make_lgb(lightgbm.LGBMRegressor)
+
+class LgbClf_old(LGBMClassifier):
     '''
+    did  not like it because had to duplicate code for classifier and regressor
     suports early stopping internally
     cv should support split method. Only uses first split.
     uses KFold(n_splits=5, shuffle=True) by default
     '''
-    def __init__(self,cv=None,stopping_rounds=5, **kwargs):
+    def __init__(self,cv=None,stopping_rounds=5,max_est= 1000, **kwargs):
         if cv is None:
             cv=KFold(n_splits=5, shuffle=True, random_state=1)
             
         assert int(lightgbm.__version__.split(".")[0])>=4, "otherwise lgb uses different syntax"
-        super().__init__(**kwargs)
+        if "n_estimators" in kwargs: # for some reason necessary in cross validation
+            kwargs.pop("n_estimators")
+        super().__init__(n_estimators=max_est, **kwargs)
         self.cv =cv
         self.stopping_rounds=stopping_rounds
-
+        self.max_est = max_est
 
     def get_params(self, deep=True):
         params = super().get_params(deep=deep)
         # Remove or replace cv here to avoid serialization errors
         params.pop('cv', None)
+        params.pop('max_est', None)
         params.pop('stopping_rounds', None)
         return params
 
@@ -38,6 +111,8 @@ class LgbClf(LGBMClassifier):
             self.cv = params.pop('cv')
         if "stopping_rounds" in params:
             self.stopping_rounds= params.pop("stopping_rounds")
+        if "max_est" in params:
+            self.max_est = params.pop("max_est")
         super().set_params(**params)
         return self
     

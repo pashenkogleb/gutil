@@ -145,6 +145,15 @@ class LgbClf_old(LGBMClassifier):
             raise ValueError(f"unknown type: {type(X)}")
 
 
+def num_params(model, trainable =False):
+    '''
+    counts number of parameters in torch model
+    '''
+    if trainable:
+         return sum(p.numel() for p in model.parameters() if p.requires_grad)
+    else:
+        return sum(p.numel() for p in model.parameters())
+
 def cv_optimize(clf_type, params,  X, Y, num_splits = 5, return_search_space = False):
     '''
     Finds optimal model among clf_type by using exhaustive search with cross validation

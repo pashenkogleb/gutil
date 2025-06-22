@@ -3,6 +3,7 @@ import gutil
 import subprocess
 import os
 import IPython
+from openai import OpenAI
 
 
 def widen():
@@ -16,6 +17,7 @@ def reload():
     importlib.reload(gutil.basic)
     importlib.reload(gutil.pandas)
     importlib.reload(gutil.op)
+    importlib.reload(gutil.nlp)
     if hasattr(gutil, "ml"):
         importlib.reload(gutil.ml)
     importlib.reload(gutil)
